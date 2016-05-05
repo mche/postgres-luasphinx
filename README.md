@@ -46,7 +46,8 @@ select id, weight, attr[1]::int from pllua.sphinx("select ...");
 У меня постгрес установлен в домашней папке и запускаю его своим пользователем
 
 ```bash
-$ export PG_CONFIG="$HOME/postgres/bin/pg_config" # where pg_config is located нужно только на момент компиляции pllua
+# where pg_config is located нужно только на момент компиляции pllua
+$ export PG_CONFIG="$HOME/postgres/bin/pg_config" 
 ```
 
 Далее нужен сам Lua, я выбрал luajit из пакета openresty
@@ -64,9 +65,10 @@ $ make && make install
 ```
 
 Выяснилась какая-то ошибка с линковкой библиотек, костыль:
-
+(или отредактировать эту переменную)
 ```bash
-$ sudo ln -s ~/openresty/luajit/lib/libluajit-5.1.so.2 /usr/lib/libluajit-5.1.so.2
+$ echo 'export LD_LIBRARY_PATH="$HOME/postgres/lib:$HOME/openresty/luajit/lib:/usr/local/lib:$LD_LIBRARY_PATH' >>  ~/.bashrc
+)
 ```
 
 Активируем pllua как расширение в нужной базе:
@@ -110,6 +112,8 @@ $ psql -c 'do $lua$ local m = require("foo") $lua$ language plluau;' -d <dbname>
 ```
 
 ## SQL инициализация
+
+Все объекты помещаются в схему **pllua**
 
 ```bash
 $ psql -f sphinx.lua.sql -d <dbname>
