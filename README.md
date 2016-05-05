@@ -6,7 +6,7 @@
 
 # NAME
 
-Запросы к sphinx через функцию PostgreSQL на языке pllua
+Запросы к [Sphinx:Open Source Search Engine](http://sphinxsearch.com/) через функцию PostgreSQL на языке pllua
 
 # SYNTAX
 
@@ -68,7 +68,6 @@ $ make && make install
 (или отредактировать эту переменную)
 ```bash
 $ echo 'export LD_LIBRARY_PATH="$HOME/postgres/lib:$HOME/openresty/luajit/lib:/usr/local/lib:$LD_LIBRARY_PATH' >>  ~/.bashrc
-)
 ```
 
 Активируем pllua как расширение в нужной базе:
@@ -99,7 +98,7 @@ $ eval $(~/luarocks/bin/luarocks path)
 $ echo "eval $(~/luarocks/bin/luarocks path)" >> ~/.bashrc
 ```
 
-Если я запускаю сервер постгреса через своего пользователя, то пути рокса будут видны luajit в функциях pllua. Перед запуском можно глянуть:
+Если я запускаю сервер постгреса через своего пользователя, то пути роксов будут видны luajit в функциях pllua. Перед запуском можно глянуть:
 
 ```bash
 $ env | grep LUA
