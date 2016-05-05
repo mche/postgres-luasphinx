@@ -127,3 +127,8 @@ https://github.com/andy128k/pg-sphinx
 
 http://pgxn.org/search?q=fdw+mysql&in=extensions
 
+# USEFULL
+
+http://hyperpolyglot.org/
+
+http://ilovelua.narod.ru/about_lua.html
