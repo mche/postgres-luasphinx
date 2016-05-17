@@ -40,23 +40,75 @@ if _U.sphinx == nil then
 -- create environment object
   local env = assert (driver.mysql(), "Проблемы с драйвером mysql")
 -- connect to data source
-  _U.sphinx = assert (env:connect("",nil,nil,conf.host, conf.port), "Не смог соединиться к сфинксу")
-  print("Соединился к сфинксу", _U.sphinx)
-  
+
+  _U.sphinx = {
+    conf = conf,
+    env = env,
+    
+    connected = function(self)
+      return self.connection and true
+    end,
+    
+    connect = function(self)
+      local conn, err = self.env:connect("",nil,nil,self.conf.host, self.conf.port)
+      self.connection = conn
+      if not self.connection then
+        print("Не смог соединиться к сфинксу", err)
+        return nil, err
+      end
+      return self
+    end,
+    
+    close = function(self)
+      if self.connection:close() then
+        self.connection = nil
+        return self
+      else 
+        return nil, "can't close connection -- it's still being used."
+      end
+    end,  
+    
+    reconnect = function(self) 
+      self.connection=nil
+      return self:connect() 
+    end,
+    
+    --- perform an SQL query. returns a cursor for SELECT queries, number of rows touched for all other queries,(nil, error) on error.
+    -- @param str query
+    -- @return query result or [nil, err_message] on error
+    query = function(self, str)
+      local conn, res, err = self.connection, nil, nil
+      res, err = conn:execute(str)
+      if not res and type(err)=="string" and err:match("MySQL server has gone away") then --
+        if self:reconnect() then
+          conn = self.connection
+          print("Переподключился к сфинксу", conn)
+          res, err = conn:execute(str)
+        else
+          print("Соединение со сфинксом окончательно потеряно.")
+        end
+      end
+      if not res then
+        local error = err .. ". Query was: " .. str
+        print(error)
+        return nil, error
+      end
+      return res
+    end
+  }
+  assert (_U.sphinx:connect(), "Не смог соединиться к сфинксу")
+  print("Соединился к сфинксу", _U.sphinx.connection)
 end
 
 --local cjson = require "cjson"
 
 -- retrieve a cursor
-local cur = assert (_U.sphinx:execute(query), "Ошибка запроса к индексу сфинкса")
+local cur = assert (_U.sphinx:query(query), "Ошибка запроса к индексу сфинкса")
 local row = cur:fetch ({}, "a")
 while row do
   --print(cjson.encode(row))
   local o = {id=row.id, attr=nil, weight=(row['weight'] or row['weight()' or row['w'])}
-  row.id = nil
-  row['weight'] = nil
-  row['weight()'] = nil
-  row['w'] = nil
+  row.id, row['weight'], row['weight()'], row['w'] = nil, nil, nil, nil
   local attr = {}
   for k,v in pairs(row) do attr[#attr+1] = v end
   if #attr > 0 then o.attr = attr end
