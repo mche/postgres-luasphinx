@@ -28,12 +28,11 @@ if _U.sphinx == nil then
       conf[row['key']] = row['value']
     end
   --print(package.cpath)
-  local home = os.getenv('HOME')
   if conf.cpath and conf.cpath ~= "" then
-    package.cpath = package.cpath .. ";" .. string.gsub(conf.cpath, "~", home)
+    package.cpath = package.cpath .. ";" .. string.gsub(conf.cpath, "~", os.getenv('HOME'))
   end
   if conf.path and conf.path ~= "" then
-    package.path = package.path .. ";" .. string.gsub(conf.path, "~", home)
+    package.path = package.path .. ";" .. string.gsub(conf.path, "~", os.getenv('HOME'))
   end
   -- load driver
   local driver = require "luasql.mysql"
@@ -66,20 +65,20 @@ if _U.sphinx == nil then
       else 
         return nil, "can't close connection -- it's still being used."
       end
-    end,  
-    
-    reconnect = function(self) 
-      self.connection=nil
-      return self:connect() 
     end,
     
-    --- perform an SQL query. returns a cursor for SELECT queries, number of rows touched for all other queries,(nil, error) on error.
+    reconnect = function(self)
+      self.connection=nil
+      return self:connect()
+    end,
     -- @param str query
-    -- @return query result or [nil, err_message] on error
+    -- @return cursor or [nil, err] on error
     query = function(self, str)
       local conn, res, err = self.connection, nil, nil
       res, err = conn:execute(str)
-      if not res and type(err)=="string" and err:match("MySQL server has gone away") then --
+      if not res and type(err)=="string"
+        and err:match("MySQL server has gone away")
+        then
         if self:reconnect() then
           conn = self.connection
           print("Переподключился к сфинксу", conn)
@@ -89,8 +88,8 @@ if _U.sphinx == nil then
         end
       end
       if not res then
-        local error = err .. ". Query was: " .. str
-        print(error)
+--        local error = err .. ". Query was: " .. str
+        print("Ошибка запроса к индексу сфинкса", err)
         return nil, error
       end
       return res
@@ -107,7 +106,7 @@ local cur = assert (_U.sphinx:query(query), "Ошибка запроса к ин
 local row = cur:fetch ({}, "a")
 while row do
   --print(cjson.encode(row))
-  local o = {id=row.id, attr=nil, weight=(row['weight'] or row['weight()' or row['w'])}
+  local o = {id=row.id, attr=nil, weight=(row['weight'] or row['weight()'] or row['w'])}
   row.id, row['weight'], row['weight()'], row['w'] = nil, nil, nil, nil
   local attr = {}
   for k,v in pairs(row) do attr[#attr+1] = v end
